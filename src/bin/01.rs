@@ -97,7 +97,7 @@ impl ExtractDigitFromProse for [u8] {
             }
             let mut j = 0;
 
-            while let Some(&byte) = self.get(i - j) {
+            while let Some(&byte) = self.get(i.saturating_sub(j)) {
                 if j >= 5 {
                     break;
                 }
