@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 advent_of_code::solution!(1);
 
@@ -31,7 +31,7 @@ trait ExtractDigitFromProse {
 
 impl ExtractDigitFromProse for [u8] {
     fn extract_digit(&self) -> Option<u32> {
-        let mut buffer: Vec<u8> = vec![];
+        let mut buffer = Vec::with_capacity(5);
         let map = HashMap::from(
             [
                 ("one", 1),
@@ -47,55 +47,68 @@ impl ExtractDigitFromProse for [u8] {
             .map(|(k, v)| (k.as_bytes(), v)),
         );
 
-        for (i, &c) in self.into_iter().enumerate() {
-            match c {
-                c if (c as char).is_ascii_digit() => return (c as u32).into(),
-                _ => buffer.push(c),
+        // loop through the bytes, interpret them as ascii char, and check if it is a digit against the map
+        // inner loop advances the buffer to the next 5 bytes, checking against the map if it is a digit
+        // advances the buffer is already 5 bytes long (the longest digit is 5 bytes long)
+        // short-circuit: if the first char is a digit, return early
+        for i in 0..self.len() {
+            if (self[i] as char).is_ascii_digit() {
+                return (self[i] as char).to_digit(10).into();
             }
+            let mut j = 0;
+            while let Some(&byte) = self.get(i + j) {
+                if j >= 5 {
+                    break;
+                }
 
-            if let Some(&num) = map.get(&buffer[..]) {
-                return num.into();
-            }
+                buffer.push(byte);
+                if let Some(&num) = map.get(&buffer[..]) {
+                    return num.into();
+                }
 
-            if buffer.len() > 5 {
-                buffer.clear();
+                j += 1;
             }
+            buffer.clear();
         }
+
         None
     }
 
     fn extract_digit_rev(&self) -> Option<u32> {
-        let mut buffer: Vec<u8> = vec![];
+        let mut buffer = Vec::with_capacity(5);
         let map = HashMap::from(
             [
-                ("one", 1),
-                ("two", 2),
-                ("three", 3),
-                ("four", 4),
-                ("five", 5),
-                ("six", 6),
-                ("seven", 7),
-                ("eight", 8),
-                ("nine", 9),
+                ("eno", 1),
+                ("owt", 2),
+                ("eerht", 3),
+                ("ruof", 4),
+                ("evif", 5),
+                ("xis", 6),
+                ("neves", 7),
+                ("thgie", 8),
+                ("enin", 9),
             ]
             .map(|(k, v)| (k.as_bytes(), v)),
         );
 
-        for (i, &c) in self.into_iter().rev().enumerate() {
-            match c {
-                c if (c as char).is_ascii_digit() => return (c as u32).into(),
-                _ => buffer.push(c),
+        for i in (0..self.len()).rev() {
+            if (self[i] as char).is_ascii_digit() {
+                return (self[i] as char).to_digit(10).into();
             }
+            let mut j = 0;
 
-            let reverse_buffer = buffer.iter().rev().copied().collect::<Vec<u8>>();
+            while let Some(&byte) = self.get(i - j) {
+                if j >= 5 {
+                    break;
+                }
+                buffer.push(byte);
+                if let Some(&num) = map.get(&buffer[..]) {
+                    return num.into();
+                }
 
-            if let Some(&num) = map.get(&reverse_buffer[..]) {
-                return num.into();
+                j += 1;
             }
-
-            if buffer.len() > 5 {
-                buffer.clear();
-            }
+            buffer.clear()
         }
         None
     }
@@ -109,9 +122,6 @@ pub fn part_two(input: &str) -> Option<u32> {
         .map(|line| {
             let first_digit = line.extract_digit().unwrap_or(0);
             let last_digit = line.extract_digit_rev().unwrap_or(0);
-
-            // debug
-            println!(" {} {}", first_digit, last_digit);
 
             first_digit * 10 + last_digit
         })
